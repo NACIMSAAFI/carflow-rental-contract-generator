@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carflow Rental Contract Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+:root{--primary:#667eea;--secondary:#764ba2;--accent:#c85a5a;--light:#f5f5f5;--medium:#ddd;--dark:#555;--text:#333}
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;margin:0;padding:20px;background:var(--light);color:var(--text);line-height:1.6}
+.app-container{max-width:1200px;margin:0 auto;background:white;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.1);overflow:hidden}
+.app-header{background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;padding:25px;text-align:center}
+.app-header h1{margin:0;font-size:2.2rem}
+.app-header p{margin:10px 0 0;font-size:1.1rem;opacity:.9}
+.form-section{padding:20px;border-bottom:1px solid #eee}
+.form-section h3{margin:0 0 15px 0;color:var(--text);border-bottom:2px solid var(--primary);padding-bottom:8px;font-size:1.2rem}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px}
+.form-group{display:flex;flex-direction:column}
+.form-group label{font-weight:600;margin-bottom:6px;color:var(--dark);font-size:.9rem}
+.form-group input,.form-group select{padding:10px;border:1px solid var(--medium);border-radius:4px;font-size:14px;transition:border-color .3s}
+.form-group input:focus,.form-group select:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 2px rgba(102,126,234,.2)}
+.photo-upload{display:flex;flex-direction:column;align-items:center;border:2px dashed var(--medium);padding:20px;margin:10px 0;border-radius:8px;background:#f9f9f9;transition:border-color .3s;cursor:pointer}
+.photo-upload:hover{border-color:var(--primary)}
+.car-image-container{margin-bottom:15px;border:1px solid #ccc;border-radius:4px;overflow:hidden;width:100%;max-width:400px;height:250px;display:flex;align-items:center;justify-content:center;background:#f8f9fa}
+.contract .car-image-container{height:120px;margin-bottom:3px}
+.car-template-image{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.photo-upload small{text-align:center;color:#666;margin-top:10px;font-size:.8rem}
+.button-container{display:flex;justify-content:center;padding:20px;flex-wrap:wrap;gap:15px}
+.generate-btn{background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:0;padding:15px 30px;font-size:16px;border-radius:5px;cursor:pointer;transition:transform .2s,box-shadow .2s;min-width:200px;font-weight:600}
+.generate-btn:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,.15)}
+.generate-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.generate-btn.test{background:linear-gradient(135deg,#28a745,#20c997)}
+.file-input{display:none}
+.upload-button{background:var(--primary);color:white;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:14px;margin-top:10px;transition:background-color .3s}
+.upload-button:hover{background:var(--secondary)}
+#pdfProgress{display:none;text-align:center;margin:20px;padding:20px;background:#f8f9fa;border-radius:8px;border-left:4px solid var(--primary)}
+.progress-text{font-size:18px;margin-bottom:10px;color:var(--dark)}
+.progress-subtext{font-size:14px;color:#666}
+.accessories-check{margin-top:20px}
+.accessories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:15px}
+.accessory-item{display:flex;align-items:center;padding:8px;border:1px solid var(--medium);border-radius:4px;background:#f9f9f9}
+.accessory-item input[type="checkbox"]{margin-right:10px;width:18px;height:18px}
+.accessory-item label{font-size:14px;cursor:pointer}
+.condition-notes{margin-top:15px}
+.condition-notes textarea{width:100%;padding:10px;border:1px solid var(--medium);border-radius:4px;resize:vertical;min-height:80px;font-family:inherit}
+.contract{width:210mm;min-height:297mm;background:white;margin:0 auto;padding:6mm;font-family:Arial,sans-serif;font-size:10px;color:#333;display:none;box-sizing:border-box;overflow:visible;box-shadow:0 0 15px rgba(0,0,0,.1);transform:scale(1);transform-origin:top center;zoom:1}
+.contract.show{display:block}
+.contract-header{background:#666;color:white;padding:5px;margin-bottom:6px;border-radius:3px;display:flex;justify-content:space-between;align-items:center}
+.contract-header .logo{color:#ff6b6b;font-size:15px;font-weight:bold;font-style:italic}
+.contract-header .company-info{font-size:8px;text-align:right;line-height:1.1}
+.contract-number{background:#555;color:white;padding:4px 8px;display:inline-block;margin-bottom:6px;font-size:10px;font-weight:bold}
+.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;align-items:start}
+.section{border:1px solid #ccc;margin-bottom:3px;border-radius:3px;overflow:visible;break-inside:avoid}
+.section-header{background:var(--accent);color:white;padding:2px 4px;font-weight:bold;font-size:8px}
+.section-content{padding:3px}
+.field-row{display:flex;justify-content:space-between;margin-bottom:2px;font-size:9px;align-items:center}
+.field-label{font-weight:bold;min-width:60px;font-size:8px}
+.field-value{border-bottom:1px solid #333;flex:1;margin-left:3px;padding-bottom:1px;min-height:6px;font-size:9px}
+.car-photos{display:grid;grid-template-columns:1fr;gap:2px;margin:2px 0}
+.car-photo-container{text-align:center;border:1px solid #ccc;padding:1px;border-radius:2px;display:flex;align-items:center;justify-content:center;min-height:120px}
+.car-photo{width:160px;height:110px;object-fit:contain;border-radius:2px}
+.car-photo-placeholder{width:160px;height:110px;border:1px dashed #999;display:flex;align-items:center;justify-content:center;font-size:7px;color:#666;background:#f9f9f9;flex-direction:column}
+.signature-section{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:8px;border-top:1px solid #ccc;padding-top:8px;page-break-inside:avoid}
+.signature-box{text-align:center;min-height:70px;border:1px solid #ccc;padding:12px;border-radius:3px;background:#fff}
+.compact-table{width:100%;font-size:9px;border-collapse:collapse}
+.compact-table td{padding:1px 2px;border-bottom:1px solid #ddd}
+.compact-table th{padding:1px 2px;border-bottom:2px solid #ddd;text-align:left}
+.accessories-grid-pdf{display:grid;grid-template-columns:1fr 1fr;gap:1px;font-size:7px}
+.checkbox-item{display:flex;align-items:center;margin:0.5px 0}
+.checkbox-item input[type="checkbox"]{width:7px;height:7px;margin-right:2px}
+.acceptance-text{font-size:7px;text-align:center;margin-top:5px;padding:3px;border-top:1px solid #ccc}
+.legal-text{font-size:7px;margin-top:4px;padding:3px;border:1px solid #ccc;border-radius:3px;background:#f9f9f9}
+.form-group input:invalid{border-color:#e74c3c}
+.form-group input:valid{border-color:#2ecc71}
+.required::after{content:" *";color:#e74c3c}
+.pricing-section{min-height:auto}
+.pricing-section .field-row{margin-bottom:2px}
+.total-calculation{background:#f0f8ff;padding:4px;margin-top:6px;border-radius:3px;border:1px solid #ddd}
+.error-message{background:#ffebee;color:#c62828;padding:10px;border-radius:4px;margin:10px 0;border-left:4px solid #f44336}
+/* Right column specific optimizations */
+.right-column .section{margin-bottom:2px}
+.right-column .section-content{padding:2px}
+.right-column .field-row{margin-bottom:1px;font-size:8px}
+.right-column .accessories-grid-pdf{font-size:6px}
+.right-column .checkbox-item{margin:0}
+.right-column .signature-section{margin-top:8px;padding-top:8px}
+.right-column .signature-box{min-height:65px;padding:10px}
+.right-column .acceptance-text{font-size:6px;margin-top:3px;padding:2px}
+@media (max-width:768px){.form-grid{grid-template-columns:1fr}.contract-grid{grid-template-columns:1fr}.button-container{flex-direction:column;align-items:center}.generate-btn{width:100%;max-width:300px}.accessories-grid{grid-template-columns:1fr}}
+@media print{body{margin:0;background:white;width:100%}.app-container{box-shadow:none;max-width:none;width:100%}.form-section,.generate-btn,.app-header{display:none}.contract{display:block!important;margin:0;box-shadow:none;width:100%;height:auto;transform:scale(1);padding:0;page-break-inside:avoid;zoom:1;overflow:visible}.contract-grid{page-break-inside:avoid}.section{page-break-inside:avoid}}
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <h1>🚗 Carflow Rental Contract Generator</h1>
+            <p>Create professional rental agreements instantly</p>
+        </div>
+
+        <div class="form-section">
+            <h3>Contract Information</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">Contract Number</label>
+                    <input type="text" id="contractNumber" value="0002149" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Rental Date</label>
+                    <input type="date" id="rentalDate" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Company Information</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">Company Name</label>
+                    <input type="text" id="companyName" placeholder="Company Name" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Primary Driver</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">Last Name</label>
+                    <input type="text" id="driver1Name" placeholder="Last Name" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">First Name</label>
+                    <input type="text" id="driver1FirstName" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Birth Date/Place</label>
+                    <input type="text" id="driver1BirthInfo" placeholder="DD/MM/YYYY, City" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Nationality</label>
+                    <input type="text" id="driver1Nationality" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">ID/Passport Number</label>
+                    <input type="text" id="driver1ID" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">ID Issue Date</label>
+                    <input type="date" id="driver1IDDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">License Number</label>
+                    <input type="text" id="driver1License" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">License Issue Date</label>
+                    <input type="date" id="driver1LicenseDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Phone</label>
+                    <input type="text" id="driver1Phone" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Address</label>
+                    <input type="text" id="driver1Address" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Second Driver (Optional)</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="driver2Name">
+                </div>
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="driver2FirstName">
+                </div>
+                <div class="form-group">
+                    <label>Birth Date/Place</label>
+                    <input type="text" id="driver2BirthInfo" placeholder="DD/MM/YYYY, City">
+                </div>
+                <div class="form-group">
+                    <label>Nationality</label>
+                    <input type="text" id="driver2Nationality">
+                </div>
+                <div class="form-group">
+                    <label>ID/Passport Number</label>
+                    <input type="text" id="driver2ID">
+                </div>
+                <div class="form-group">
+                    <label>ID Issue Date</label>
+                    <input type="date" id="driver2IDDate">
+                </div>
+                <div class="form-group">
+                    <label>License Number</label>
+                    <input type="text" id="driver2License">
+                </div>
+                <div class="form-group">
+                    <label>License Issue Date</label>
+                    <input type="date" id="driver2LicenseDate">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" id="driver2Phone">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" id="driver2Address">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Vehicle Information</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">Vehicle Make/Model</label>
+                    <input type="text" id="vehicleMake" placeholder="e.g., Renault Clio" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Registration Number</label>
+                    <input type="text" id="vehicleRegistration" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Departure Location</label>
+                    <input type="text" id="departureLocation" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Return Location</label>
+                    <input type="text" id="returnLocation" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Rental Duration</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">Departure Date</label>
+                    <input type="date" id="departureDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Departure Time</label>
+                    <input type="time" id="departureTime" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Return Date</label>
+                    <input type="date" id="returnDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Return Time</label>
+                    <input type="time" id="returnTime" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Kilometrage</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Departure Km</label>
+                    <input type="number" id="departureKm" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label>Return Km</label>
+                    <input type="number" id="returnKm" placeholder="">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Vehicle Photos</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Car Photo - Before Rental</label>
+                    <div class="photo-upload" onclick="document.getElementById('carImageBefore').click()">
+                        <div class="car-image-container">
+                            <img id="carTemplateBefore" src="" alt="Car Template" class="car-template-image">
+                        </div>
+                        <div class="upload-button">Upload Car Image</div>
+                        <small>Car condition before rental - Upload your car diagram</small>
+                        <input type="file" id="carImageBefore" class="file-input" accept="image/*">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Car Photo - After Rental</label>
+                    <div class="photo-upload" onclick="document.getElementById('carImageAfter').click()">
+                        <div class="car-image-container">
+                            <img id="carTemplateAfter" src="" alt="Car Template" class="car-template-image">
+                        </div>
+                        <div class="upload-button">Upload Car Image</div>
+                        <small>Car condition after return - Upload your car diagram</small>
+                        <input type="file" id="carImageAfter" class="file-input" accept="image/*">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Accessories Check</h3>
+            <div class="accessories-check">
+                <h4>Before Rental</h4>
+                <div class="accessories-grid" id="accessoriesBefore">
+                    <div class="accessory-item">
+                        <input type="checkbox" id="radioBefore" checked>
+                        <label for="radioBefore">Radio</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="spareWheelBefore" checked>
+                        <label for="spareWheelBefore">Spare Wheel</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="jackBefore" checked>
+                        <label for="jackBefore">Jack</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="hubcapsBefore" checked>
+                        <label for="hubcapsBefore">Hubcaps (4)</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="matsBefore" checked>
+                        <label for="matsBefore">Mats Set</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="triangleBefore" checked>
+                        <label for="triangleBefore">Warning Triangle</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="lighterBefore" checked>
+                        <label for="lighterBefore">Cigarette Lighter</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="documentsBefore" checked>
+                        <label for="documentsBefore">All Documents</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="keysBefore" checked>
+                        <label for="keysBefore">Keys (2)</label>
+                    </div>
+                </div>
+                
+                <div class="condition-notes">
+                    <label>Condition Notes (Before Rental)</label>
+                    <textarea id="conditionNotesBefore" placeholder="Any existing damages or special notes about the vehicle condition..."></textarea>
+                </div>
+                
+                <h4 style="margin-top: 20px;">After Rental</h4>
+                <div class="accessories-grid" id="accessoriesAfter">
+                    <div class="accessory-item">
+                        <input type="checkbox" id="radioAfter" checked>
+                        <label for="radioAfter">Radio</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="spareWheelAfter" checked>
+                        <label for="spareWheelAfter">Spare Wheel</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="jackAfter" checked>
+                        <label for="jackAfter">Jack</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="hubcapsAfter" checked>
+                        <label for="hubcapsAfter">Hubcaps (4)</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="matsAfter" checked>
+                        <label for="matsAfter">Mats Set</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="triangleAfter" checked>
+                        <label for="triangleAfter">Warning Triangle</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="lighterAfter" checked>
+                        <label for="lighterAfter">Cigarette Lighter</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="documentsAfter" checked>
+                        <label for 'documentsAfter'>All Documents</label>
+                    </div>
+                    <div class="accessory-item">
+                        <input type="checkbox" id="keysAfter" checked>
+                        <label for="keysAfter">Keys (2)</label>
+                    </div>
+                </div>
+                
+                <div class="condition-notes">
+                    <label>Condition Notes (After Rental)</label>
+                    <textarea id="conditionNotesAfter" placeholder="Any damages or issues noted upon return..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Pricing</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">Rental Duration (Days)</label>
+                    <input type="number" id="rentalDays" placeholder="1" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Daily Rate</label>
+                    <input type="number" id="dailyRate" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Additional Charges</label>
+                    <input type="number" id="additionalCharges" placeholder="0.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="required">Guarantee Amount</label>
+                    <input type="number" id="guaranteeAmount" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">Payment Method</label>
+                    <select id="paymentMethod" required>
+                        <option value="cash">Cash / Espèces</option>
+                        <option value="check">Check / Chèque</option>
+                        <option value="card">Credit Card / CB</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="required">Currency</label>
+                    <select id="currency" required>
+                        <option value="TND">TND (Tunisian Dinar)</option>
+                        <option value="EUR">EUR (Euro)</option>
+                        <option value="USD">USD (US Dollar)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display:none;"></div>
+
+        <div class="button-container">
+            <button class="generate-btn" id="generateBtn" onclick="generateContract()">📄 Generate PDF Contract</button>
+            <button class="generate-btn test" onclick="testPDFGeneration()">🧪 Test PDF Generation</button>
+        </div>
+        
+        <div id="pdfProgress">
+            <div class="progress-text">📄 Generating PDF...</div>
+            <div class="progress-subtext">Please wait while we capture the contract and create your PDF</div>
+        </div>
+    </div>
+
+    <div id="contract" class="contract">
+        <div class="contract-header">
+            <div>
+                <div class="logo">carflow</div>
+                <div style="font-size: 10px; font-weight: bold;">CARFLOW RENTAL</div>
+            </div>
+            <div class="company-info">
+                190 Avenue du 15 Octobre 1963 - 2053 - Kabaria - Tunis Sud - Tunisie<br>
+                Tél: +216 56 631 191 &nbsp;&nbsp; E-mail: contact@carflow.com<br>
+                RC: C0143213022 &nbsp;&nbsp; MF: 1791630 H/A/M/000
+            </div>
+        </div>
+
+        <div class="contract-number">
+            Contrat de location &nbsp;&nbsp; N° <span id="contractNum">0002149</span> &nbsp; CH
+        </div>
+
+        <div class="contract-grid">
+            <div>
+                <div class="section">
+                    <div class="section-header">Locataire / المستأجر</div>
+                    <div class="section-content">
+                        <div style="margin-bottom: 4px; font-size: 9px;">
+                            <strong>Société:</strong> <span id="contract-company-name" style="border-bottom: 1px solid #333; display: inline-block; min-width: 80px;"></span>
+                        </div>
+                        <div style="margin-bottom: 4px;">
+                            <strong style="color: #c85a5a; font-size: 9px;">PREMIER CONDUCTEUR / السائق الأول</strong>
+                        </div>
+                        <div class="field-row">
+                            <span>Nom:</span>
+                            <span class="field-value" id="contract-driver1-name"></span>
+                            <span>: الاسم</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Prénom:</span>
+                            <span class="field-value" id="contract-driver1-firstname"></span>
+                            <span>: اللقب</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Date/Lieu naiss:</span>
+                            <span class="field-value" id="contract-driver1-birth"></span>
+                            <span>: تاريخ الولادة</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Nationalité:</span>
+                            <span class="field-value" id="contract-driver1-nationality"></span>
+                            <span>: الجنسية</span>
+                        </div>
+                        <div class="field-row">
+                            <span>N° CIN/Passeport:</span>
+                            <span class="field-value" id="contract-driver1-id"></span>
+                            <span>: عدد وثيقة الهوية</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Délivré le:</span>
+                            <span class="field-value" id="contract-driver1-id-date"></span>
+                            <span>: تاريخ الإصدار</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Permis N°:</span>
+                            <span class="field-value" id="contract-driver1-license"></span>
+                            <span>: رقم رخصة السياقة</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Délivré le:</span>
+                            <span class="field-value" id="contract-driver1-license-date"></span>
+                            <span>: تاريخ الإصدار</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Téléphone:</span>
+                            <span class="field-value" id="contract-driver1-phone"></span>
+                            <span>: الهاتف</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Adresse:</span>
+                            <span class="field-value" id="contract-driver1-address"></span>
+                            <span>: العنوان</span>
+                        </div>
+                        
+                        <div style="margin-top: 6px;">
+                            <strong style="color: #c85a5a; font-size: 9px;">DEUXIEME CONDUCTEUR / السائق الثاني</strong>
+                        </div>
+                        <div class="field-row">
+                            <span>Nom:</span>
+                            <span class="field-value" id="contract-driver2-name"></span>
+                            <span>: الاسم</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Prénom:</span>
+                            <span class="field-value" id="contract-driver2-firstname"></span>
+                            <span>: اللقب</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Date/Lieu naiss:</span>
+                            <span class="field-value" id="contract-driver2-birth"></span>
+                            <span>: تاريخ الولادة</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Nationalité:</span>
+                            <span class="field-value" id="contract-driver2-nationality"></span>
+                            <span>: الجنسية</span>
+                        </div>
+                         <div class="field-row">
+                            <span>N° CIN/Passeport:</span>
+                            <span class="field-value" id="contract-driver2-id"></span>
+                            <span>: عدد وثيقة الهوية</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Délivré le:</span>
+                            <span class="field-value" id="contract-driver2-id-date"></span>
+                            <span>: تاريخ الإصدار</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Permis N°:</span>
+                            <span class="field-value" id="contract-driver2-license"></span>
+                            <span>: رقم رخصة السياقة</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Délivré le:</span>
+                            <span class="field-value" id="contract-driver2-license-date"></span>
+                            <span>: تاريخ الإصدار</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Téléphone:</span>
+                            <span class="field-value" id="contract-driver2-phone"></span>
+                            <span>: الهاتف</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Adresse:</span>
+                            <span class="field-value" id="contract-driver2-address"></span>
+                            <span>: العنوان</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Véhicule / السيارة</div>
+                    <div class="section-content">
+                        <div class="field-row">
+                            <span>Marque/Modèle:</span>
+                            <span class="field-value" id="contract-vehicle-make"></span>
+                            <span>: الماركة/الموديل</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Immatriculation:</span>
+                            <span class="field-value" id="contract-vehicle-registration"></span>
+                            <span>: التسجيل</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">État du véhicule / حالة السيارة</div>
+                    <div class="section-content">
+                        <div style="text-align: center; font-size: 8px; margin-bottom: 2px;">
+                            <strong>AVANT LOCATION / قبل التأجير</strong>
+                        </div>
+                        <div class="car-photos">
+                            <div class="car-photo-container" id="contract-car-before">
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; font-size: 8px; margin: 3px 0 2px;">
+                            <strong>APRÈS LOCATION / بعد التأجير</strong>
+                        </div>
+                        <div class="car-photos">
+                            <div class="car-photo-container" id="contract-car-after">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-column">
+                <div class="section">
+                    <div class="section-header">Durée de location / مدة التأجير</div>
+                    <div class="section-content">
+                        <div class="field-row">
+                            <span>Date de départ:</span>
+                            <span class="field-value" id="contract-departure-date"></span>
+                            <span>: تاريخ الانطلاق</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Heure de départ:</span>
+                            <span class="field-value" id="contract-departure-time"></span>
+                            <span>: ساعة الانطلاق</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Date de retour:</span>
+                            <span class="field-value" id="contract-return-date"></span>
+                            <span>: تاريخ الإرجاع</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Heure de retour:</span>
+                            <span class="field-value" id="contract-return-time"></span>
+                            <span>: ساعة الإرجاع</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Lieu / المكان</div>
+                    <div class="section-content">
+                        <div class="field-row">
+                            <span>Lieu de départ:</span>
+                            <span class="field-value" id="contract-departure-location"></span>
+                            <span>: مكان الانطلاق</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Lieu de retour:</span>
+                            <span class="field-value" id="contract-return-location"></span>
+                            <span>: مكان الإرجاع</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Kilométrage / المسافة المقطوعة</div>
+                    <div class="section-content">
+                        <div class="field-row">
+                            <span>Km de départ:</span>
+                            <span class="field-value" id="contract-departure-km"></span>
+                            <span>: كيلومتر الانطلاق</span>
+                        </div>
+                        <div class="field-row">
+                            <span>Km de retour:</span>
+                            <span class="field-value" id="contract-return-km"></span>
+                            <span>: كيلومتر الإرجاع</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section pricing-section">
+                    <div class="section-header">Facturation / الفوترة</div>
+                    <div class="section-content">
+                        <table class="compact-table">
+                            <tr>
+                                <td>Durée de location:</td>
+                                <td><span id="contract-rental-days"></span> jours</td>
+                            </tr>
+                            <tr>
+                                <td>Tarif journalier:</td>
+                                <td><span id="contract-daily-rate"></span> <span id="contract-currency"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Montant location:</td>
+                                <td><span id="contract-rental-amount"></span> <span id="contract-currency2"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Frais supplémentaires:</td>
+                                <td><span id="contract-additional-charges"></span> <span id="contract-currency3"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Sous-total:</td>
+                                <td><span id="contract-subtotal"></span> <span id="contract-currency4"></span></td>
+                            </tr>
+                            <tr>
+                                <td>TVA (19%):</td>
+                                <td><span id="contract-tva"></span> <span id="contract-currency5"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Timbre fiscale (1 DT):</td>
+                                <td>1.00 TND</td>
+                            </tr>
+                            <tr style="border-top: 2px solid #333; font-weight: bold;">
+                                <td>Total à payer:</td>
+                                <td><span id="contract-total"></span> <span id="contract-currency6"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Mode de règlement / طريقة الدفع</div>
+                    <div class="section-content">
+                        <div class="field-row">
+                            <span>Mode de paiement:</span>
+                            <span class="field-value" id="contract-payment-method"></span>
+                            <span>: طريقة الدفع</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Caution de garantie / ضمان</div>
+                    <div class="section-content">
+                        <div class="field-row">
+                            <span>Montant:</span>
+                            <span class="field-value" id="contract-guarantee-amount"></span>
+                            <span>: المبلغ</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Accessoires / الملحقات</div>
+                    <div class="section-content">
+                        <div style="text-align: center; font-size: 7px; margin-bottom: 2px;">
+                            <strong>AVANT LOCATION / قبل التأجير</strong>
+                        </div>
+                        <div class="accessories-grid-pdf">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-radio-before"> Radio
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-spareWheel-before"> Roue de secours
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-jack-before"> Cric
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-hubcaps-before"> Enjoliveurs (4)
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-mats-before"> Tapis de sol
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-triangle-before"> Triangle
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-lighter-before"> Allume-cigare
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-documents-before"> Documents
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-keys-before"> Clés
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; font-size: 7px; margin: 4px 0 2px;">
+                            <strong>APRÈS LOCATION / بعد التأجير</strong>
+                        </div>
+                        <div class="accessories-grid-pdf">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-radio-after"> Radio
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-spareWheel-after"> Roue de secours
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-jack-after"> Cric
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-hubcaps-after"> Enjoliveurs (4)
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-mats-after"> Tapis de sol
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-triangle-after"> Triangle
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-lighter-after"> Allume-cigare
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-documents-after"> Documents
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="contract-keys-after"> Clés
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header">Observations / ملاحظات</div>
+                    <div class="section-content">
+                        <div style="margin-bottom: 4px;">
+                            <div style="font-size: 7px; font-weight: bold; margin-bottom: 2px;">Avant location / قبل التأجير:</div>
+                            <div style="border: 1px solid #ddd; padding: 2px; min-height: 25px; font-size: 7px; background: #f9f9f9;" id="contract-condition-notes-before"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 7px; font-weight: bold; margin-bottom: 2px;">Après location / بعد التأجير:</div>
+                            <div style="border: 1px solid #ddd; padding: 2px; min-height: 25px; font-size: 7px; background: #f9f9f9;" id="contract-condition-notes-after"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div style="font-size: 9px; font-weight: bold;">Signature Locataire</div>
+                        <div style="font-size: 7px; margin-top: 3px;">توقيع المستأجر</div>
+                    </div>
+                    <div class="signature-box">
+                        <div style="font-size: 9px; font-weight: bold;">Signature Carflow</div>
+                        <div style="font-size: 7px; margin-top: 3px;">توقيع كارفلو</div>
+                    </div>
+                </div>
+                <div class="acceptance-text">
+                    <p>Lu et accepté les conditions générales et particulières de la location telles que spécifiées au recto et au verso de ce contrat, et je déclare avoir eu connaissance de l'état du véhicule loué ou prêté.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to track library loading
+        let jsPDFLoaded = false;
+        let html2canvasLoaded = false;
+
+        // Check if libraries are loaded
+        function checkLibraries() {
+            // Updated jsPDF check to handle different loading scenarios
+            jsPDFLoaded = typeof window.jsPDF !== 'undefined' || 
+                         (typeof window.jspdf !== 'undefined' && typeof window.jspdf.jsPDF !== 'undefined');
+            
+            html2canvasLoaded = typeof html2canvas !== 'undefined';
+            
+            if (!jsPDFLoaded || !html2canvasLoaded) {
+                showError('PDF libraries not loaded. Please refresh the page and try again.');
+                return false;
+            }
+            return true;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.getElementById('rentalDate').value = formattedDate;
+            
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
+            
+            document.getElementById('departureDate').value = formattedDate;
+            document.getElementById('returnDate').value = tomorrowFormatted;
+            document.getElementById('departureTime').value = '09:00';
+            document.getElementById('returnTime').value = '17:00';
+
+            // Setup file input event listeners
+            document.getElementById('carImageBefore').addEventListener('change', function() {
+                loadCarImage(this, 'carTemplateBefore');
+            });
+            
+            document.getElementById('carImageAfter').addEventListener('change', function() {
+                loadCarImage(this, 'carTemplateAfter');
+            });
+
+            // Check libraries after a short delay
+            setTimeout(checkLibraries, 1000);
+        });
+
+        function loadCarImage(input, targetId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById(targetId);
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function generateContract() {
+            
+            if (!checkLibraries()) {
+                return;
+            }
+
+            const requiredInputs = document.querySelectorAll('input[required]');
+            let isValid = true;
+            
+            requiredInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.style.borderColor = '#e74c3c';
+                    isValid = false;
+                } else {
+                    input.style.borderColor = '#2ecc71';
+                }
+            });
+            
+            if (!isValid) {
+                showError('Please fill in all required fields marked with *');
+                return;
+            }
+
+            // Disable button to prevent multiple clicks
+            const generateBtn = document.getElementById('generateBtn');
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            
+            try {
+                populateContract();
+                setTimeout(() => {
+                    generatePDF();
+                }, 500);
+            } catch (error) {
+                showError('Error generating contract: ' + error.message);
+                generateBtn.disabled = false;
+                generateBtn.textContent = '📄 Generate PDF Contract';
+            }
+        }
+
+        function populateContract() {
+            
+            document.getElementById('contract').classList.add('show');
+            
+            // Populate basic data
+            document.getElementById('contractNum').textContent = document.getElementById('contractNumber').value;
+            document.getElementById('contract-company-name').textContent = document.getElementById('companyName').value;
+            
+            // Driver data
+            const driverFields = [
+                {id: 'Name', contract: 'name'},
+                {id: 'FirstName', contract: 'firstname'},
+                {id: 'BirthInfo', contract: 'birth'},
+                {id: 'Nationality', contract: 'nationality'},
+                {id: 'ID', contract: 'id'},
+                {id: 'Phone', contract: 'phone'},
+                {id: 'Address', contract: 'address'}
+            ];
+            
+            driverFields.forEach(field => {
+                const driver1Value = document.getElementById(`driver1${field.id}`).value;
+                const driver2Value = document.getElementById(`driver2${field.id}`).value;
+                
+                document.getElementById(`contract-driver1-${field.contract}`).textContent = driver1Value;
+                document.getElementById(`contract-driver2-${field.contract}`).textContent = driver2Value || '-';
+            });
+            
+            // Date fields
+            document.getElementById('contract-driver1-id-date').textContent = formatDate(document.getElementById('driver1IDDate').value);
+            document.getElementById('contract-driver1-license-date').textContent = formatDate(document.getElementById('driver1LicenseDate').value);
+            document.getElementById('contract-driver2-id-date').textContent = document.getElementById('driver2IDDate').value ? formatDate(document.getElementById('driver2IDDate').value) : '-';
+            document.getElementById('contract-driver2-license-date').textContent = document.getElementById('driver2LicenseDate').value ? formatDate(document.getElementById('driver2LicenseDate').value) : '-';
+            
+            // License numbers
+            document.getElementById('contract-driver1-license').textContent = document.getElementById('driver1License').value;
+            document.getElementById('contract-driver2-license').textContent = document.getElementById('driver2License').value || '-';
+            
+            // Vehicle info
+            document.getElementById('contract-vehicle-make').textContent = document.getElementById('vehicleMake').value;
+            document.getElementById('contract-vehicle-registration').textContent = document.getElementById('vehicleRegistration').value;
+            document.getElementById('contract-departure-location').textContent = document.getElementById('departureLocation').value;
+            document.getElementById('contract-return-location').textContent = document.getElementById('returnLocation').value;
+            
+            // Duration
+            document.getElementById('contract-departure-date').textContent = formatDate(document.getElementById('departureDate').value);
+            document.getElementById('contract-departure-time').textContent = document.getElementById('departureTime').value;
+            document.getElementById('contract-return-date').textContent = formatDate(document.getElementById('returnDate').value);
+            document.getElementById('contract-return-time').textContent = document.getElementById('returnTime').value;
+            
+            // Km
+            document.getElementById('contract-departure-km').textContent = document.getElementById('departureKm').value || '-';
+            document.getElementById('contract-return-km').textContent = document.getElementById('returnKm').value || '-';
+            
+            // Car photos
+            populateCarPhotos();
+            
+            // Pricing calculations
+            populatePricing();
+            
+            // Accessories
+            populateAccessories();
+            
+            // Condition notes
+            document.getElementById('contract-condition-notes-before').textContent = document.getElementById('conditionNotesBefore').value || '-';
+            document.getElementById('contract-condition-notes-after').textContent = document.getElementById('conditionNotesAfter').value || '-';
+        }
+
+        function populateCarPhotos() {
+            const carBeforeImg = document.getElementById('carTemplateBefore');
+            const carAfterImg = document.getElementById('carTemplateAfter');
+            const contractCarBefore = document.getElementById('contract-car-before');
+            const contractCarAfter = document.getElementById('contract-car-after');
+            
+            contractCarBefore.innerHTML = '';
+            contractCarAfter.innerHTML = '';
+            
+            if (carBeforeImg.src && carBeforeImg.src !== window.location.href) {
+                const img = document.createElement('img');
+                img.src = carBeforeImg.src;
+                img.className = 'car-photo';
+                contractCarBefore.appendChild(img);
+            } else {
+                contractCarBefore.innerHTML = '<div class="car-photo-placeholder"><div>No Image</div><div>لا توجد صورة</div></div>';
+            }
+            
+            if (carAfterImg.src && carAfterImg.src !== window.location.href) {
+                const img = document.createElement('img');
+                img.src = carAfterImg.src;
+                img.className = 'car-photo';
+                contractCarAfter.appendChild(img);
+            } else {
+                contractCarAfter.innerHTML = '<div class="car-photo-placeholder"><div>No Image</div><div>لا توجد صورة</div></div>';
+            }
+        }
+
+        function populatePricing() {
+            const rentalDays = parseInt(document.getElementById('rentalDays').value) || 0;
+            const dailyRate = parseFloat(document.getElementById('dailyRate').value) || 0;
+            const additionalCharges = parseFloat(document.getElementById('additionalCharges').value) || 0;
+            const guaranteeAmount = parseFloat(document.getElementById('guaranteeAmount').value) || 0;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const currency = document.getElementById('currency').value;
+            
+            const rentalAmount = rentalDays * dailyRate;
+            const subtotal = rentalAmount + additionalCharges;
+            const tva = subtotal * 0.19;
+            const total = subtotal + tva + 1;
+            
+            document.getElementById('contract-rental-days').textContent = rentalDays;
+            document.getElementById('contract-daily-rate').textContent = dailyRate.toFixed(2);
+            document.getElementById('contract-rental-amount').textContent = rentalAmount.toFixed(2);
+            document.getElementById('contract-additional-charges').textContent = additionalCharges.toFixed(2);
+            document.getElementById('contract-subtotal').textContent = subtotal.toFixed(2);
+            document.getElementById('contract-tva').textContent = tva.toFixed(2);
+            document.getElementById('contract-total').textContent = total.toFixed(2);
+            
+            // Currency
+            document.querySelectorAll('[id^="contract-currency"]').forEach(el => {
+                el.textContent = currency;
+            });
+            
+            document.getElementById('contract-guarantee-amount').textContent = guaranteeAmount.toFixed(2) + ' ' + currency;
+            
+            // Payment method
+            let paymentMethodText = '';
+            switch(paymentMethod) {
+                case 'cash': paymentMethodText = 'Espèces / نقدا'; break;
+                case 'check': paymentMethodText = 'Chèque / شيك'; break;
+                case 'card': paymentMethodText = 'Carte de crédit / بطاقة ائتمان'; break;
+            }
+            document.getElementById('contract-payment-method').textContent = paymentMethodText;
+        }
+
+        function populateAccessories() {
+            const accessories = ['radio','spareWheel','jack','hubcaps','mats','triangle','lighter','documents','keys'];
+            accessories.forEach(acc => {
+                const beforeCheckbox = document.getElementById(`${acc}Before`);
+                const afterCheckbox = document.getElementById(`${acc}After`);
+                const contractBeforeCheckbox = document.getElementById(`contract-${acc}-before`);
+                const contractAfterCheckbox = document.getElementById(`contract-${acc}-after`);
+                
+                if (beforeCheckbox && contractBeforeCheckbox) {
+                    contractBeforeCheckbox.checked = beforeCheckbox.checked;
+                }
+                if (afterCheckbox && contractAfterCheckbox) {
+                    contractAfterCheckbox.checked = afterCheckbox.checked;
+                }
+            });
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        function generatePDF() {
+            
+            document.getElementById('pdfProgress').style.display = 'block';
+            
+            const element = document.getElementById('contract');
+            
+            if (!element) {
+                showError('Contract element not found');
+                return;
+            }
+
+            // Wait for any images to load
+            const loadImages = () => {
+                return new Promise((resolve) => {
+                    const images = element.getElementsByTagName('img');
+                    let loadedCount = 0;
+                    const totalImages = images.length;
+                    
+                    if (totalImages === 0) {
+                        resolve();
+                        return;
+                    }
+                    
+                    const imageLoaded = () => {
+                        loadedCount++;
+                        if (loadedCount === totalImages) resolve();
+                    };
+                    
+                    for (let i = 0; i < totalImages; i++) {
+                        if (images[i].complete && images[i].naturalHeight !== 0) {
+                            imageLoaded();
+                        } else {
+                            images[i].addEventListener('load', imageLoaded);
+                            images[i].addEventListener('error', imageLoaded);
+                        }
+                    }
+                    
+                    // Fallback timeout
+                    setTimeout(resolve, 3000);
+                });
+            };
+            
+            loadImages().then(() => {
+                
+                html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: element.offsetWidth,
+                    height: element.offsetHeight
+                }).then(canvas => {
+                    
+                    try {
+                        // Handle different jsPDF loading scenarios
+                        let jsPDFConstructor;
+                        if (typeof window.jsPDF !== 'undefined') {
+                            jsPDFConstructor = window.jsPDF.jsPDF;
+                        } else if (typeof window.jspdf !== 'undefined') {
+                            jsPDFConstructor = window.jspdf.jsPDF;
+                        } else {
+                            throw new Error('jsPDF not found');
+                        }
+                        
+                        const doc = new jsPDFConstructor('p', 'mm', 'a4');
+                        
+                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        const imgWidth = 210;
+                        const pageHeight = 297;
+                        const imgHeight = canvas.height * imgWidth / canvas.width;
+                        let heightLeft = imgHeight;
+                        let position = 0;
+                        
+                        doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                        
+                        while (heightLeft >= 0) {
+                            position = heightLeft - imgHeight;
+                            doc.addPage();
+                            doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+                        }
+                        
+                        const contractNumber = document.getElementById('contractNumber').value;
+                        const fileName = `Carflow_Contract_${contractNumber}.pdf`;
+                        
+                        doc.save(fileName);
+                        
+                        
+                    } catch (pdfError) {
+                        showError('Error creating PDF: ' + pdfError.message);
+                    } finally {
+                        document.getElementById('pdfProgress').style.display = 'none';
+                        document.getElementById('contract').classList.remove('show');
+                        
+                        const generateBtn = document.getElementById('generateBtn');
+                        generateBtn.disabled = false;
+                        generateBtn.textContent = '📄 Generate PDF Contract';
+                    }
+                    
+                }).catch(canvasError => {
+                    showError('Error capturing contract: ' + canvasError.message);
+                    
+                    document.getElementById('pdfProgress').style.display = 'none';
+                    const generateBtn = document.getElementById('generateBtn');
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = '📄 Generate PDF Contract';
+                });
+            }).catch(imageError => {
+                showError('Error loading images: ' + imageError.message);
+                
+                document.getElementById('pdfProgress').style.display = 'none';
+                const generateBtn = document.getElementById('generateBtn');
+                generateBtn.disabled = false;
+                generateBtn.textContent = '📄 Generate PDF Contract';
+            });
+        }
+        
+        function testPDFGeneration() {
+            
+            // Fill sample data
+            document.getElementById('contractNumber').value = '0002149';
+            document.getElementById('companyName').value = 'Sample Company Ltd.';
+            document.getElementById('driver1Name').value = 'Doe';
+            document.getElementById('driver1FirstName').value = 'John';
+            document.getElementById('driver1BirthInfo').value = '15/05/1985, London';
+            document.getElementById('driver1Nationality').value = 'British';
+            document.getElementById('driver1ID').value = 'AB123456';
+            document.getElementById('driver1IDDate').value = '2020-05-15';
+            document.getElementById('driver1License').value = 'UK123456';
+            document.getElementById('driver1LicenseDate').value = '2015-08-20';
+            document.getElementById('driver1Phone').value = '+44123456789';
+            document.getElementById('driver1Address').value = '123 Main St, London, UK';
+            document.getElementById('vehicleMake').value = 'Renault Clio';
+            document.getElementById('vehicleRegistration').value = '1234 TU 1234';
+            document.getElementById('departureLocation').value = 'Tunis Airport';
+            document.getElementById('returnLocation').value = 'Tunis City Center';
+            document.getElementById('departureKm').value = '12345';
+            document.getElementById('returnKm').value = '12500';
+            document.getElementById('rentalDays').value = '3';
+            document.getElementById('dailyRate').value = '50.00';
+            document.getElementById('additionalCharges').value = '25.00';
+            document.getElementById('guaranteeAmount').value = '200.00';
+            
+            // Trigger validation styling
+            const requiredInputs = document.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => {
+                input.style.borderColor = '#2ecc71';
+            });
+            
+            alert('Sample data filled. Click "Generate PDF Contract" to test PDF generation.');
+        }
+
+    </script>
+</body>
+</html>
